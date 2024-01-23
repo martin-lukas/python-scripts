@@ -33,54 +33,6 @@ class CubeEngine:
         pygame.draw.line(self.screen, black, b, d)
         pygame.draw.line(self.screen, black, c, d)
 
-    def draw_axes(self):
-        # Axes
-        pygame.draw.line(
-            self.screen, black,
-            (self.center_x, 0),
-            (self.center_x, self.screen_height)
-        )
-        pygame.draw.line(
-            self.screen, black,
-            (0, self.center_y),
-            (self.screen_width, self.center_y)
-        )
-
-        # X notches
-        i = 0
-        cur_x = self.center_x
-        while cur_x <= self.screen_width:
-            cur_x = self.x(i)
-            cur_x_inv = self.x(-i)
-            pygame.draw.line(
-                self.screen, black,
-                (cur_x, self.center_y - 5),
-                (cur_x, self.center_y + 5)
-            )
-            pygame.draw.line(
-                self.screen, black,
-                (cur_x_inv, self.center_y - 5),
-                (cur_x_inv, self.center_y + 5)
-            )
-            i += 1
-        # Y notches
-        i = 0
-        cur_y = self.center_y
-        while cur_y <= self.screen_height:
-            cur_y = self.y(i)
-            cur_y_inv = self.y(-i)
-            pygame.draw.line(
-                self.screen, black,
-                (self.center_x - 5, cur_y),
-                (self.center_x + 5, cur_y)
-            )
-            pygame.draw.line(
-                self.screen, black,
-                (self.center_x - 5, cur_y_inv),
-                (self.center_x + 5, cur_y_inv)
-            )
-            i += 1
-
     def x(self, units):
         total_delta = 0
         cur_delta = self.unit_px
@@ -106,8 +58,6 @@ class CubeEngine:
     def game_loop(self):
         cur_x = 0
         cur_y = 0
-        dir_x = 1
-        dir_y = 1
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -124,20 +74,6 @@ class CubeEngine:
                         cur_x += 1
 
             self.screen.fill(white)
-            if (cur_y % 5) == 0:
-                if cur_x < -20:
-                    dir_x = 1
-                if cur_x >= 20:
-                    dir_x = -1
-            cur_x = (cur_x + dir_x)
-            if (cur_x % 3) == 0:
-                if cur_y < -20:
-                    dir_y = 1
-                if cur_y >= 20:
-                    dir_y = -1
-                cur_y = (cur_y + dir_y)
-
-            self.draw_axes()
 
             self.draw_perspective_square(cur_x, cur_y)
 
