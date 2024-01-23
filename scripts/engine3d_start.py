@@ -1,7 +1,7 @@
-from CubeEngine import CubeEngine
+from engine3d import Engine3D
 
 
-cube_engine = CubeEngine(
+engine3d = Engine3D(
     screen_width=800,
     screen_height=800,
     unit_px=20,
@@ -9,4 +9,4 @@ cube_engine = CubeEngine(
     size=3
 )
 
-cube_engine.game_loop()
+engine3d.start()

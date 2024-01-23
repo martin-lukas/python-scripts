@@ -5,7 +5,7 @@ black = (0, 0, 0)
 white = (255, 255, 255)
 
 
-class CubeEngine:
+class Engine3D:
     def __init__(self, screen_width, screen_height, unit_px, dist_factor, size):
         self.screen_width = screen_width
         self.screen_height = screen_height
@@ -55,7 +55,7 @@ class CubeEngine:
                 total_delta += cur_delta
         return self.center_y + total_delta
 
-    def game_loop(self):
+    def start(self):
         cur_x = 0
         cur_y = 0
         while True:
