@@ -6,12 +6,13 @@ class TestRemoveSuffixFunction(unittest.TestCase):
     def test_clean_episode_name(self):
         self.assertEqual(
             clean_episode_name(
-                'Modern Family S04E21 How he became us.mkv', 'Modern Family'),
-            'Modern Family S04E21.mkv'
+                'Modern Family S04E21 How he became us', 'Modern Family'
+            ),
+            'Modern Family S04E21'
         )
         self.assertEqual(
-            clean_episode_name('Invalid Format.txt', 'Something'),
-            'Invalid Format.txt'
+            clean_episode_name('Invalid Format', 'Something'),
+            'Invalid Format'
         )
 
 
