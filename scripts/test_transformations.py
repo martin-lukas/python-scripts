@@ -1,5 +1,5 @@
 import unittest
-from transformations import move, rotate
+from transformations import move, rect_center, rotate
 
 
 class TestTransformations(unittest.TestCase):
@@ -13,6 +13,10 @@ class TestTransformations(unittest.TestCase):
         a = (0, 0)
         c = (1, 0)
         self.assertEqual((1, 1), rotate(a, c, 270))
+
+    def test_rect_center(self):
+        rect = [(0, 0), (2, 0), (2, 2), (0, 2)]
+        self.assertEqual((1, 1), rect_center(rect))
 
 
 if __name__ == '__main__':
