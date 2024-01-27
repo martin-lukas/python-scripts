@@ -1,81 +1,94 @@
-import pygame
-import sys
+import pygame as pg
 
-black = (0, 0, 0)
-white = (255, 255, 255)
+from transformations import rotate, move
+from colors import BLACK
+
+WIDTH, HEIGHT = 800, 800
+H_WIDTH, H_HEIGHT = WIDTH // 2, HEIGHT // 2
+FPS = 60
+ROTATION_STEP = 4
+MOVE_STEP = 3
+
+pg.init()
+screen = pg.display.set_mode((WIDTH, HEIGHT))
+clock = pg.time.Clock()
+
+square = pg.Rect(600, 500, 100, 100)
+square_points = [
+    (square.left, square.top),
+    (square.right, square.top),
+    (square.right, square.bottom),
+    (square.left, square.bottom)
+]
+
+cur_rot = 0
 
 
-class Engine3D:
-    def __init__(self, screen_width, screen_height, unit_px, dist_factor, size):
-        self.screen_width = screen_width
-        self.screen_height = screen_height
-        self.center_x = screen_width // 2
-        self.center_y = screen_height // 2
-        self.unit_px = unit_px
-        self.dist_factor = dist_factor
-        self.size = size
+def draw():
+    screen.fill((96, 35, 32))
+    # Draw rectangles
+    rect_1 = pg.Rect(300, 300, 300, 50)
+    rect_2 = pg.Rect(300, 560, 300, 50)
+    rect_3 = pg.Rect(20, 400, 300, 50)
+    # Get points of rectangle as a list of tuples
+    rect_1_points = [
+        (rect_1.left, rect_1.top),
+        (rect_1.right, rect_1.top),
+        (rect_1.right, rect_1.bottom),
+        (rect_1.left, rect_1.bottom)
+    ]
+    rect_2_points = [
+        (rect_2.left, rect_2.top),
+        (rect_2.right, rect_2.top),
+        (rect_2.right, rect_2.bottom),
+        (rect_2.left, rect_2.bottom)
+    ]
+    rect_3_points = [
+        (rect_3.left, rect_3.top),
+        (rect_3.right, rect_3.top),
+        (rect_3.right, rect_3.bottom),
+        (rect_3.left, rect_3.bottom)
+    ]
+    # Rotate these points by 315 degrees, around the center of the rectangle
+    rect_1_points = [rotate(p, rect_1.center, 45) for p in rect_1_points]
+    rect_2_points = [rotate(p, rect_2.center, 45) for p in rect_2_points]
+    rect_3_points = [rotate(p, rect_3.center, 90) for p in rect_3_points]
+    # Draw the rotated rectangle using the rotated points
+    pg.draw.polygon(screen, BLACK, rect_1_points, 2)
+    pg.draw.polygon(screen, BLACK, rect_2_points, 2)
+    pg.draw.polygon(screen, BLACK, rect_3_points, 2)
 
-        self.lines = [
-            ((0, 0), (0, 1))
-        ]
+    square_center = (
+        (square_points[1][0] - square_points[0][0]) // 2 + square_points[0][0],
+        (square_points[2][1] - square_points[0][1]) // 2 + square_points[0][1]
+    )
+    rotated_square_points = [
+        rotate(p, square_center, cur_rot)
+        for p in square_points
+    ]
+    pg.draw.polygon(screen, BLACK, rotated_square_points, 2)
 
-        pygame.init()
-        pygame.display.set_caption("Cube")
-        self.screen = pygame.display.set_mode((screen_width, screen_height))
 
-    def draw_perspective_square(self, cur_x, cur_y):
-        a = (self.x(cur_x), self.y(cur_y))
-        b = (self.x(cur_x + self.size), self.y(cur_y))
-        c = (self.x(cur_x), self.y(cur_y + self.size))
-        d = (self.x(cur_x + self.size), self.y(cur_y + self.size))
-        pygame.draw.line(self.screen, black, a, b)
-        pygame.draw.line(self.screen, black, a, c)
-        pygame.draw.line(self.screen, black, b, d)
-        pygame.draw.line(self.screen, black, c, d)
+while True:
+    draw()
+    [exit() for ev in pg.event.get() if ev.type == pg.QUIT]
 
-    def x(self, units):
-        total_delta = 0
-        cur_delta = self.unit_px
-        for _ in range(abs(units)):
-            cur_delta = round(cur_delta * self.dist_factor)
-            if units < 0:
-                total_delta -= cur_delta
-            else:
-                total_delta += cur_delta
-        return self.center_x + total_delta
+    # Rotation controls
+    if pg.key.get_pressed()[pg.K_RIGHT]:
+        cur_rot += ROTATION_STEP
+    if pg.key.get_pressed()[pg.K_LEFT]:
+        cur_rot -= ROTATION_STEP
 
-    def y(self, units):
-        total_delta = 0
-        cur_delta = self.unit_px
-        for _ in range(abs(units)):
-            cur_delta = round(cur_delta * self.dist_factor)
-            if units < 0:
-                total_delta -= cur_delta
-            else:
-                total_delta += cur_delta
-        return self.center_y + total_delta
+    # Movement controls
+    if pg.key.get_pressed()[pg.K_w]:
+        square_points = [move(p, (0, -MOVE_STEP)) for p in square_points]
+    if pg.key.get_pressed()[pg.K_s]:
+        square_points = [move(p, (0, MOVE_STEP)) for p in square_points]
+    if pg.key.get_pressed()[pg.K_a]:
+        square_points = [move(p, (-MOVE_STEP, 0)) for p in square_points]
+    if pg.key.get_pressed()[pg.K_d]:
+        square_points = [move(p, (MOVE_STEP, 0)) for p in square_points]
 
-    def start(self):
-        cur_x = 0
-        cur_y = 0
-        while True:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_UP:
-                        cur_y += 1
-                    elif event.key == pygame.K_DOWN:
-                        cur_y -= 1
-                    if event.key == pygame.K_LEFT:
-                        cur_x -= 1
-                    elif event.key == pygame.K_RIGHT:
-                        cur_x += 1
-
-            self.screen.fill(white)
-
-            self.draw_perspective_square(cur_x, cur_y)
-
-            pygame.display.flip()
-            pygame.time.Clock().tick(60)
+    pg.display.set_caption(str(int(clock.get_fps())))
+    pg.display.flip()
+    clock.tick(FPS)
