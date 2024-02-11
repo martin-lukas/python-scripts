@@ -71,9 +71,9 @@ def rect_center_3d(rect):
 
 
 def build_cube_lines(points):
-    pa, pb, pc, pd, pe, pf, pg, ph = points
+    a, b, c, d, e, f, g, h = points
     return [
-        (pa, pb), (pb, pc), (pc, pd), (pd, pa),
-        (pe, pf), (pf, pg), (pg, ph), (ph, pe),
-        (pa, pe), (pb, pf), (pc, pg), (pd, ph)
+        (a, b), (b, c), (c, d), (d, a),
+        (e, f), (f, g), (g, h), (h, e),
+        (a, e), (b, f), (c, g), (d, h)
     ]
