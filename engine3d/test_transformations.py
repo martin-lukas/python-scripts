@@ -1,5 +1,5 @@
 import unittest
-from transformations import move, rect_center, rotate, rotate_3d, \
+from transformations import move, rect_center, rotate, buggy_rotate_3d, \
     build_cube_lines
 
 
@@ -15,10 +15,10 @@ class TestTransformations(unittest.TestCase):
         c = (1, 0)
         self.assertEqual((1, 1), rotate(a, c, 270))
 
-    def test_rotate_3d(self):
+    def test_buggy_rotate_3d(self):
         a = (0, 0, 0)
         c = (1, 0, 0)
-        self.assertEqual((1, 1, 0), rotate_3d(a, c, "z", 270))
+        self.assertEqual((1, 1, 0), buggy_rotate_3d(a, c, "z", 270))
 
     def test_rect_center(self):
         rect = [(0, 0), (2, 0), (2, 2), (0, 2)]

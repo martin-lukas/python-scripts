@@ -1,6 +1,6 @@
 import pygame as pg
 
-from transformations import rotate_3d, pg_rect_to_points, \
+from transformations import buggy_rotate_3d, pg_rect_to_points, \
     rect_center_3d, build_cube_lines
 from colors import BLACK
 
@@ -38,11 +38,11 @@ def draw():
     ]
     cube_center = rect_center_3d(diagonal_square)
 
-    # Rotate cube points by all axes
+    # Rotate cube points
     axes = [("y", rot_y), ("x", rot_x), ("z", rot_z)]
     for axis in axes:
         for i in range(len(cube_points)):
-            cube_points[i] = rotate_3d(
+            cube_points[i] = buggy_rotate_3d(
                 point=cube_points[i],
                 center=cube_center,
                 axis=axis[0],

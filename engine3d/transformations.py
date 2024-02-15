@@ -13,7 +13,7 @@ def rotate(point, center, degrees):
     return tuple(map(round, rotated_point))
 
 
-def rotate_3d(point, center, axis, degrees):
+def buggy_rotate_3d(point, center, axis, degrees):
     deg_in_rad = radians(degrees)
     rotation_matrix = None
     if axis == "x":
