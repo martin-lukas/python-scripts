@@ -1,16 +1,11 @@
 import pygame as pg
-from controls import \
-    on_key_down_update_rotations, on_key_down_update_movement
-from transformations import \
-    pg_rect_to_points, rect_center_3d, build_cube_lines, rotate_points
+from transformations import pg_rect_to_points, build_cube_lines
 from colors import BLACK, WHITE
 
 # Constants
 WIDTH, HEIGHT = 800, 800
 H_WIDTH, H_HEIGHT = WIDTH // 2, HEIGHT // 2
 FPS = 60
-ROTATION_STEP = 0.5
-MOVE_STEP = 3
 
 # Pygame setup
 pg.init()
@@ -25,9 +20,6 @@ back_square = front_square.copy()
 
 # App state
 cube_points = [a, b, c, d, e, f, g, h]
-rot_x = 0.0
-rot_y = 0.0
-rot_z = 0.0
 
 
 def draw(points):
@@ -46,37 +38,13 @@ def draw(points):
 
 
 while True:
+    # Monitor exit events
     [exit() for ev in pg.event.get() if ev.type == pg.QUIT]
 
-    # Update rotations based on key presses
-    (new_rot_x, new_rot_y, new_rot_z) = on_key_down_update_rotations(
-        pg.key.get_pressed(),
-        (rot_x, rot_y, rot_z),
-        ROTATION_STEP
-    )
-    rot_x, rot_y, rot_z = new_rot_x, new_rot_y, new_rot_z
-
-    cube_center = rect_center_3d([
-        cube_points[0],
-        cube_points[5],
-        cube_points[6],
-        cube_points[3],
-    ])
-    cube_points = rotate_points(
-        cube_points,
-        cube_center,
-        (rot_x, rot_y, rot_z)
-    )
-
-    # Update movement based on key presses
-    cube_points = on_key_down_update_movement(
-        pg.key.get_pressed(),
-        cube_points,
-        MOVE_STEP
-    )
-
+    # Draw
     draw(cube_points)
 
+    # FPS setup
     pg.display.set_caption(str(int(clock.get_fps())))
     pg.display.flip()
     clock.tick(FPS)
