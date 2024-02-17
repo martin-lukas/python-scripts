@@ -13,6 +13,21 @@ def rotate(point, center, degrees):
     return tuple(map(round, rotated_point))
 
 
+def rotate_points(points, center, rotations):
+    new_points = points.copy()
+    (rot_x, rot_y, rot_z) = rotations
+    axes = [("y", rot_y), ("x", rot_x), ("z", rot_z)]
+    for axis in axes:
+        for i in range(len(points)):
+            new_points[i] = buggy_rotate_3d(
+                point=new_points[i],
+                center=center,
+                axis=axis[0],
+                degrees=axis[1]
+            )
+    return new_points
+
+
 def buggy_rotate_3d(point, center, axis, degrees):
     deg_in_rad = radians(degrees)
     rotation_matrix = None
