@@ -9,7 +9,7 @@ from console_utils import print_error, read, \
     print_success, print_choices
 from file_utils import rename_file, PREVIOUS_DIR
 
-DOWNLOADS_PATH = os.path.expanduser('~/Downloads/Torrents')
+TORRENTS_PATH = os.path.expanduser('~/Downloads/Torrents')
 JELLYFIN_PATH = os.path.expanduser('~/Movies')
 FILM = {
     'name': 'Film',
@@ -81,7 +81,7 @@ def read_media_type():
 def read_year():
     while True:
         year = read("Year: ")
-        if year.isdigit() and 1900 <= int(year) <= 2050:
+        if year.isdigit() and len(year) == 4:
             return year
         else:
             print_error("Invalid year. Try again.")
@@ -153,7 +153,7 @@ def move_tv_show_season(torrent_path, media_name, year):
 if __name__ == "__main__":
     print("Which media do you want to move to Jellyfin?")
     try:
-        torrent_path = find_file(history=[], cur_path=DOWNLOADS_PATH)
+        torrent_path = find_file(history=[], cur_path=TORRENTS_PATH)
         chosen_media_type = read_media_type()
         media_name = read(f"{chosen_media_type['name']} name: ")
         year = read_year()
