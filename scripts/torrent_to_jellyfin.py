@@ -1,13 +1,12 @@
 #!/Users/martin/code/python/venv/bin/python
 
 import os
+import re
 import shutil
 from pathlib import Path
-import re
 
-from console_utils import print_error, read, \
-    print_success, print_choices
-from file_utils import rename_file, PREVIOUS_DIR
+from console_utils import *
+from file_utils import rename_file
 
 TORRENTS_PATH = os.path.expanduser('~/Downloads/Torrents')
 JELLYFIN_PATH = os.path.expanduser('~/Movies')
@@ -21,6 +20,7 @@ TV_SHOW = {
 }
 MEDIA_TYPES = [FILM, TV_SHOW]
 SEASON_EPISODE_PATTERN = re.compile(r'(S\d{2}E\d{2})')
+PREVIOUS_DIR = '..'
 
 
 class MediaAlreadyExists(Exception):
