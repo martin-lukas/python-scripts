@@ -32,8 +32,9 @@ def find_file(history, cur_path):
         while True:
             print_choices(choices)
             choice = read("> ")
-            if (choice.isdigit() and 0 < int(choice) <= len(choices)) \
-                or choice == "":
+            if (
+                choice.isdigit() and 1 <= int(choice) <= len(choices)
+            ) or choice == "":
                 return choice
             else:
                 print_error("Invalid choice. Try again.")
