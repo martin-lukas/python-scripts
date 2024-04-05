@@ -33,7 +33,7 @@ def find_file(history, cur_path):
             print_choices(choices)
             choice = read("> ")
             if (choice.isdigit() and 0 < int(choice) <= len(choices)) \
-                    or choice == "":
+                or choice == "":
                 return choice
             else:
                 print_error("Invalid choice. Try again.")
@@ -107,9 +107,9 @@ def move_film(torrent_path, media_name, year):
                     os.path.join(torrent_path, file),
                     os.path.join(film_folder, file)
                 )
-        else:  # TODO: fix handling of individual files
+        else:
             shutil.move(
-                torrent_path,
+                torrent_path.with_name(f"{media_name}{torrent_path.suffix}"),
                 os.path.join(film_folder, torrent_path.name)
             )
     except FileExistsError:
