@@ -69,7 +69,7 @@ def find_folder(history, cur_path):
     )
     if choice == "":
         # Choose current folder
-        return Path(cur_path)
+        return cur_path
     elif choice.isdigit():
         chosen_file = files[int(choice) - 1]
         if chosen_file == PREVIOUS_DIR:
@@ -130,9 +130,9 @@ def is_tv_show_season_in_jellyfin(media_name, year, season):
 
 
 def transfer_tv_show_season_to_jellyfin(
-    torrent_path, jellyfin_tv_show_path, tv_show, year, season
+    torrent_season_path, jellyfin_tv_show_path, tv_show, year, season
 ):
-    files = [f for f in torrent_path.iterdir() if f.is_file()]
+    files = [f for f in Path(torrent_season_path).iterdir() if f.is_file()]
     if files:
         for file in files:
             season_episode = get_regex_match(file.name, SEASON_EPISODE_PATTERN)
@@ -143,11 +143,12 @@ def transfer_tv_show_season_to_jellyfin(
         f"Season {str(season).zfill(2)}"
     )
     os.makedirs(season_folder)
-    for episode in os.listdir(torrent_path):
+    for episode in os.listdir(torrent_season_path):
         shutil.move(
-            src=os.path.join(torrent_path, episode),
+            src=os.path.join(torrent_season_path, episode),
             dst=os.path.join(season_folder, episode)
         )
+    shutil.rmtree(torrent_season_path)
 
 
 def main():
@@ -175,7 +176,7 @@ def main():
                 )
             else:
                 transfer_tv_show_season_to_jellyfin(
-                    torrent_path=torrent_path,
+                    torrent_season_path=torrent_path,
                     jellyfin_tv_show_path=chosen_media_type["folder"],
                     tv_show=media_name,
                     year=year,
