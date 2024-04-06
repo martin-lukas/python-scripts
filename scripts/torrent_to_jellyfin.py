@@ -5,21 +5,21 @@ import re
 import shutil
 from pathlib import Path
 
-from console_utils import *
-from file_utils import rename_file
-from regex_utils import get_regex_match
+from utils.console_utils import *
+from utils.file_utils import rename_file
+from utils.regex_utils import get_regex_match
 
-TORRENTS_PATH = os.path.expanduser('~/Downloads/Torrents')
-JELLYFIN_PATH = os.path.expanduser('~/Movies')
+TORRENTS_PATH = os.path.expanduser("~/Downloads/Torrents")
+JELLYFIN_PATH = os.path.expanduser("~/Movies")
 FILM = {
-    'name': 'Film', 'folder': os.path.join(JELLYFIN_PATH, 'Films')
+    "name": "Film", "folder": os.path.join(JELLYFIN_PATH, "Films")
 }
 TV_SHOW = {
-    'name': 'TV show', 'folder': os.path.join(JELLYFIN_PATH, 'TV Shows')
+    "name": "TV show", "folder": os.path.join(JELLYFIN_PATH, "TV Shows")
 }
 MEDIA_TYPES = [FILM, TV_SHOW]
-SEASON_EPISODE_PATTERN = re.compile(r'(S\d{2}E\d{2})')
-PREVIOUS_DIR = '..'
+SEASON_EPISODE_PATTERN = re.compile(r"(S\d{2}E\d{2})")
+PREVIOUS_DIR = ".."
 
 
 # --- Custom exceptions ---
@@ -28,19 +28,19 @@ class MediaAlreadyExists(Exception):
 
 
 # --- Console input functions ---
-def read_media_type():
+def read_media_type(media_types):
     def choose_media_type():
         while True:
-            print_choices([media['name'] for media in MEDIA_TYPES])
+            print_choices([media["name"] for media in media_types])
             choice = read("> ")
-            if choice.isdigit() and 0 < int(choice) <= len(MEDIA_TYPES):
+            if choice.isdigit() and 0 < int(choice) <= len(media_types):
                 return int(choice) - 1
             else:
                 print_error("Invalid choice. Try again.")
     
     print("Which media type is it?")
     choice = choose_media_type()
-    return MEDIA_TYPES[choice]
+    return media_types[choice]
 
 
 def read_year():
@@ -101,10 +101,10 @@ def rename_film_files(torrent_path, media_name):
         raise ValueError("Invalid folder path (a file).")
 
 
-def move_film(torrent_path, media_name, year):
+def move_film(torrent_path, jellyfin_film_path, media_name, year):
     film_folder_name = f"{media_name} ({year})"
     try:
-        film_folder = os.path.join(FILM['folder'], film_folder_name)
+        film_folder = os.path.join(jellyfin_film_path, film_folder_name)
         os.makedirs(film_folder)
         if torrent_path.is_dir():
             for file in os.listdir(torrent_path):
@@ -128,10 +128,16 @@ def rename_episode_files(dir_path, tv_show_name):
             rename_file(file, f"{tv_show_name} {season_episode}")
 
 
-def move_tv_show_season(torrent_path, media_name, year, season):
-    tv_show_folder = os.path.join(TV_SHOW['folder'], f"{media_name} ({year})")
+def move_tv_show_season(
+    torrent_path, jellyfin_tv_show_path, media_name, year, season
+):
+    tv_show_folder = os.path.join(
+        jellyfin_tv_show_path, f"{media_name} ({year})"
+    )
     os.makedirs(tv_show_folder, exist_ok=True)
-    season_folder = os.path.join(tv_show_folder, f"Season {season.zfill(2)}")
+    season_folder = os.path.join(
+        tv_show_folder, f"Season {str(season).zfill(2)}"
+    )
     try:
         os.makedirs(season_folder)
         for episode in os.listdir(torrent_path):
@@ -143,27 +149,41 @@ def move_tv_show_season(torrent_path, media_name, year, season):
         print_error(f"Season {season} already exists.")
 
 
-if __name__ == "__main__":
+def move_torrent_to_jellyfin(torrents_dir, media_types):
     print("Which media do you want to move to Jellyfin?")
     try:
-        torrent_path = find_file(history=[], cur_path=TORRENTS_PATH)
-        chosen_media_type = read_media_type()
-        media_name = read(f"{chosen_media_type['name']} name: ")
+        torrent_path = find_file(history=[], cur_path=torrents_dir)
+        chosen_media_type = read_media_type(media_types)
+        media_name = read(f"{chosen_media_type["name"]} name: ")
         year = read_year()
-        if chosen_media_type == FILM:
+        if chosen_media_type["name"] == "film":
             if torrent_path.is_dir():
                 rename_film_files(torrent_path, media_name)
-                move_film(torrent_path, media_name, year)
+                move_film(torrent_path, FILM["folder"], media_name, year)
             else:
                 new_film_path = rename_file(torrent_path, media_name)
-                move_film(new_film_path, media_name, year)
-        elif chosen_media_type == TV_SHOW:
+                move_film(
+                    new_film_path, chosen_media_type["folder"], media_name, year
+                )
+        elif chosen_media_type["name"] == "TV show":
             rename_episode_files(torrent_path, media_name)
             season = read_tv_show_season()
-            move_tv_show_season(torrent_path, media_name, year, season)
+            move_tv_show_season(
+                torrent_path,
+                chosen_media_type["folder"],
+                media_name,
+                year,
+                season
+            )
+        else:
+            raise ValueError("Invalid media type.")
         print_success("Media moved successfully.")
     except MediaAlreadyExists as e:
         print_error(f"Media '{e}' already exists.")
     except KeyboardInterrupt:
         print("\nExiting...")
         exit(1)
+
+
+if __name__ == "__main__":
+    move_torrent_to_jellyfin(TORRENTS_PATH, MEDIA_TYPES)
