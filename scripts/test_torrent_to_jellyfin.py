@@ -77,8 +77,8 @@ def test_transfer_film_folder():
     assert os.path.exists(
         os.path.join(jellyfin_film_folder, "The Lion King.srt")
     )
-    
-    
+
+
 def test_transfer_tv_show_season_folder():
     tv_show_season_folder = setup_tv_show_season_data()
     

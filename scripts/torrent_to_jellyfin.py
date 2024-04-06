@@ -28,19 +28,15 @@ class MediaAlreadyExists(Exception):
 
 
 # --- Console input functions ---
-def read_media_type(media_types):
-    def choose_media_type():
-        while True:
-            print_choices([media["name"] for media in media_types])
-            choice = read("> ")
-            if choice.isdigit() and 0 < int(choice) <= len(media_types):
-                return int(choice) - 1
-            else:
-                print_error("Invalid choice. Try again.")
-    
+def read_media_type():
     print("Which media type is it?")
-    choice = choose_media_type()
-    return media_types[choice]
+    print_choices([media["name"] for media in MEDIA_TYPES])
+    choice = read(
+        prompt="> ",
+        matches=lambda x: x.isdigit() and 1 <= int(x) <= len(MEDIA_TYPES),
+        error_message="Invalid choice. Try again."
+    )
+    return MEDIA_TYPES[int(choice) - 1]
 
 
 def read_year():
@@ -64,7 +60,7 @@ def find_folder(history, cur_path):
     print_choices(files)
     choice = read(
         prompt="> ",
-        matches=lambda x: x.isdigit() or x == "",
+        matches=lambda x: x.isdigit() and 1 <= int(x) <= len(files) or x == "",
         error_message="Invalid choice. Try again."
     )
     if choice == "":
@@ -79,20 +75,12 @@ def find_folder(history, cur_path):
             chosen_path = os.path.join(cur_path, chosen_file)
             if os.path.isdir(chosen_path):
                 history.append(cur_path)
+                # Explore selected folder
+                return find_folder(history, chosen_path)
             else:
                 print_error("Choose a folder.")
-            # Explore selected folder
-            find_folder(history, chosen_path)
-
-
-def rename_film_files(folder_path, media_name):
-    folder_path = Path(folder_path)
-    if folder_path.is_dir():
-        files = [f for f in folder_path.iterdir() if f.is_file()]
-        for file in files:
-            rename_file(file, media_name)
-    else:
-        raise ValueError("Invalid folder path (a file).")
+                # Retry
+                return find_folder(history, cur_path)
 
 
 def is_film_in_jellyfin(media_name, year):
@@ -104,12 +92,14 @@ def is_film_in_jellyfin(media_name, year):
 def transfer_film_to_jellyfin(
     torrent_path, jellyfin_film_path, film_name, year
 ):
-    rename_film_files(torrent_path, film_name)
+    files = [f for f in Path(torrent_path).iterdir() if f.is_file()]
+    for file in files:
+        rename_file(file, film_name)
     film_folder_name = f"{film_name} ({year})"
     try:
         film_folder = os.path.join(jellyfin_film_path, film_folder_name)
         os.makedirs(film_folder)
-        for file in os.listdir(torrent_path):  # TODO: can I move whole folder???
+        for file in os.listdir(torrent_path):
             shutil.move(
                 src=os.path.join(torrent_path, file),
                 dst=os.path.join(film_folder, file)
@@ -155,10 +145,10 @@ def main():
     print("Which media do you want to move to Jellyfin?")
     try:
         torrent_path = find_folder(history=[], cur_path=TORRENTS_PATH)
-        chosen_media_type = read_media_type(MEDIA_TYPES)
+        chosen_media_type = read_media_type()
         media_name = read("Name: ")
         year = read_year()
-        if chosen_media_type["name"] == "film":
+        if chosen_media_type == FILM:
             if is_film_in_jellyfin(media_name, year):
                 raise MediaAlreadyExists(f"{media_name} ({year})")
             else:
@@ -168,7 +158,7 @@ def main():
                     film_name=media_name,
                     year=year
                 )
-        elif chosen_media_type["name"] == "TV show":
+        elif chosen_media_type == TV_SHOW:
             season = read_tv_show_season()
             if is_tv_show_season_in_jellyfin(media_name, year, season):
                 raise MediaAlreadyExists(
