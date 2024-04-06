@@ -17,16 +17,22 @@ def print_error(string):
 def read_number(
     prompt, matches=lambda x: True, error_message="Invalid number. Try again."
 ):
+    return read(
+        prompt,
+        lambda x: x.isdigit() and matches(int(x)),
+        error_message
+    )
+
+
+def read(
+    prompt, matches=lambda x: True, error_message="Invalid input. Try again."
+):
     while True:
-        number = read(prompt)
-        if number.isdigit() and matches(int(number)):
-            return int(number)
+        value = input(Style.RESET_ALL + prompt)
+        if matches(value):
+            return value
         else:
             print_error(error_message)
-
-
-def read(prompt):
-    return input(Style.RESET_ALL + prompt)
 
 
 def choose(choices, prompt, error_message):
