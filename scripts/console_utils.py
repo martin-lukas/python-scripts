@@ -14,6 +14,17 @@ def print_error(string):
     print(Fore.RED + string + Style.RESET_ALL)
 
 
+def read_number(
+    prompt, matches=lambda x: True, error_message="Invalid number. Try again."
+):
+    while True:
+        number = read(prompt)
+        if number.isdigit() and matches(int(number)):
+            return int(number)
+        else:
+            print_error(error_message)
+
+
 def read(prompt):
     return input(Style.RESET_ALL + prompt)
 

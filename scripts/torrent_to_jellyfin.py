@@ -7,26 +7,55 @@ from pathlib import Path
 
 from console_utils import *
 from file_utils import rename_file
+from regex_utils import get_regex_match
 
 TORRENTS_PATH = os.path.expanduser('~/Downloads/Torrents')
 JELLYFIN_PATH = os.path.expanduser('~/Movies')
 FILM = {
-    'name': 'Film',
-    'folder': os.path.join(JELLYFIN_PATH, 'Films')
+    'name': 'Film', 'folder': os.path.join(JELLYFIN_PATH, 'Films')
 }
 TV_SHOW = {
-    'name': 'TV show',
-    'folder': os.path.join(JELLYFIN_PATH, 'TV Shows')
+    'name': 'TV show', 'folder': os.path.join(JELLYFIN_PATH, 'TV Shows')
 }
 MEDIA_TYPES = [FILM, TV_SHOW]
 SEASON_EPISODE_PATTERN = re.compile(r'(S\d{2}E\d{2})')
 PREVIOUS_DIR = '..'
 
 
+# --- Custom exceptions ---
 class MediaAlreadyExists(Exception):
     pass
 
 
+# --- Console input functions ---
+def read_media_type():
+    def choose_media_type():
+        while True:
+            print_choices([media['name'] for media in MEDIA_TYPES])
+            choice = read("> ")
+            if choice.isdigit() and 0 < int(choice) <= len(MEDIA_TYPES):
+                return int(choice) - 1
+            else:
+                print_error("Invalid choice. Try again.")
+    
+    print("Which media type is it?")
+    choice = choose_media_type()
+    return MEDIA_TYPES[choice]
+
+
+def read_year():
+    return read_number(
+        "Year: ", lambda x: 1900 <= x <= 2030, "Invalid year. Try again."
+    )
+
+
+def read_tv_show_season():
+    return read_number(
+        "Season: ", lambda x: 1 <= x <= 100, "Invalid season. Try again."
+    )
+
+
+# --- Logic functions ---
 def find_file(history, cur_path):
     def choose_file(choices):
         while True:
@@ -63,38 +92,13 @@ def find_file(history, cur_path):
                 return Path(chosen_path)
 
 
-def read_media_type():
-    def choose_media_type():
-        while True:
-            print_choices([media['name'] for media in MEDIA_TYPES])
-            choice = read("> ")
-            if choice.isdigit() and 0 < int(choice) <= len(MEDIA_TYPES):
-                return int(choice) - 1
-            else:
-                print_error("Invalid choice. Try again.")
-    
-    print("Which media type is it?")
-    choice = choose_media_type()
-    return MEDIA_TYPES[choice]
-
-
-def read_year():
-    while True:
-        year = read("Year: ")
-        if year.isdigit() and len(year) == 4:
-            return year
-        else:
-            print_error("Invalid year. Try again.")
-
-
-def clean_film_filenames(torrent_path, media_name):
+def rename_film_files(torrent_path, media_name):
     if torrent_path.is_dir():
         files = [f for f in torrent_path.iterdir() if f.is_file()]
-        if files:
-            for file in files:
-                rename_file(file, f"{media_name}{file.suffix}")
+        for file in files:
+            rename_file(file, media_name)
     else:
-        rename_file(torrent_path, f"{media_name}{torrent_path.suffix}")
+        raise ValueError("Invalid folder path (a file).")
 
 
 def move_film(torrent_path, media_name, year):
@@ -110,32 +114,21 @@ def move_film(torrent_path, media_name, year):
                 )
         else:
             shutil.move(
-                torrent_path.with_name(f"{media_name}{torrent_path.suffix}"),
-                os.path.join(film_folder, torrent_path.name)
+                torrent_path, os.path.join(film_folder, torrent_path.name)
             )
     except FileExistsError:
         raise MediaAlreadyExists(film_folder_name)
 
 
-def clean_episode_filenames(dir_path, tv_show_name):
+def rename_episode_files(dir_path, tv_show_name):
     files = [f for f in dir_path.iterdir() if f.is_file()]
     if files:
         for file in files:
-            new_name = clean_episode_name(file.name, tv_show_name)
-            rename_file(file, f"{new_name}{file.suffix}")
+            season_episode = get_regex_match(file.name, SEASON_EPISODE_PATTERN)
+            rename_file(file, f"{tv_show_name} {season_episode}")
 
 
-def clean_episode_name(name, tv_show_name):
-    season_and_episode = SEASON_EPISODE_PATTERN.search(name)
-    if season_and_episode:
-        return f'{tv_show_name} {season_and_episode.group(1)}'
-    else:
-        return name
-
-
-def move_tv_show_season(torrent_path, media_name, year):
-    season = read("Season: ")
-    
+def move_tv_show_season(torrent_path, media_name, year, season):
     tv_show_folder = os.path.join(TV_SHOW['folder'], f"{media_name} ({year})")
     os.makedirs(tv_show_folder, exist_ok=True)
     season_folder = os.path.join(tv_show_folder, f"Season {season.zfill(2)}")
@@ -158,11 +151,16 @@ if __name__ == "__main__":
         media_name = read(f"{chosen_media_type['name']} name: ")
         year = read_year()
         if chosen_media_type == FILM:
-            clean_film_filenames(torrent_path, media_name)
-            move_film(torrent_path, media_name, year)
+            if torrent_path.is_dir():
+                rename_film_files(torrent_path, media_name)
+                move_film(torrent_path, media_name, year)
+            else:
+                new_film_path = rename_file(torrent_path, media_name)
+                move_film(new_film_path, media_name, year)
         elif chosen_media_type == TV_SHOW:
-            clean_episode_filenames(torrent_path, media_name)
-            move_tv_show_season(torrent_path, media_name, year)
+            rename_episode_files(torrent_path, media_name)
+            season = read_tv_show_season()
+            move_tv_show_season(torrent_path, media_name, year, season)
         print_success("Media moved successfully.")
     except MediaAlreadyExists as e:
         print_error(f"Media '{e}' already exists.")
