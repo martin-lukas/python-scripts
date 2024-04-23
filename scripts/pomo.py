@@ -1,4 +1,4 @@
-#!/Users/martin/code/python/venv/bin/python
+#!/usr/bin/env python3.12
 import os
 import signal
 import subprocess
@@ -24,9 +24,9 @@ def start_wait(minutes):
     return subprocess.Popen(["sleep", str(minutes * 60)], preexec_fn=os.setsid)
 
 
-def handle_interrupt():
+def handle_interrupt(wait_process):
     print(YELLOW + "Interrupting the planned screen lock..." + RESET)
-    os.killpg(os.getpgid(wait_x_minutes.pid), signal.SIGTERM)
+    os.killpg(os.getpgid(wait_process.pid), signal.SIGTERM)
     sys.exit(1)
 
 
@@ -39,15 +39,20 @@ def lock_screen():
     subprocess.run(["open", "-a", "ScreenSaverEngine"])
 
 
-try:
-    if len(sys.argv) < 2:
-        print("Please provide a delay time in minutes.")
-        sys.exit(1)
-    minutes = int(sys.argv[1])
-    signal.signal(signal.SIGINT, lambda signal, frame: handle_interrupt())
-    wait_x_minutes = start_wait(minutes)
-    print_welcome(minutes)
-    wait_x_minutes.wait()
-    lock_screen()
-except subprocess.CalledProcessError as e:
-    print(f"An error occurred: {e}")
+def main():
+    try:
+        if len(sys.argv) < 2:
+            print("Please provide a delay time in minutes.")
+            sys.exit(1)
+        minutes = int(sys.argv[1])
+        wait_x_minutes = start_wait(minutes)
+        signal.signal(signal.SIGINT, lambda _, __: handle_interrupt(wait_x_minutes))
+        print_welcome(minutes)
+        wait_x_minutes.wait()
+        lock_screen()
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred: {e}")
+
+
+if __name__ == "__main__":
+    main()
