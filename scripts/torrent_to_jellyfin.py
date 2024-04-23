@@ -1,5 +1,4 @@
 #!/Users/martin/code/python/venv/bin/python
-
 import os
 import re
 import shutil
