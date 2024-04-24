@@ -4,27 +4,28 @@ import os
 import pytest
 import unittest
 
-from torrent_to_jellyfin import transfer_film_to_jellyfin, \
-    transfer_tv_show_season_to_jellyfin
+from media_to_jellyfin import transfer_film_to_jellyfin, \
+    transfer_tv_show_season_to_jellyfin, \
+    transfer_video_to_jellyfin
 
 RUN_ID = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
 TORRENTS_PATH = os.path.expanduser(f"tmp/{RUN_ID}/Torrents")
+YOUTUBE_PATH = os.path.expanduser(f"tmp/{RUN_ID}/YouTube")
 JELLYFIN_PATH = os.path.expanduser(f"tmp/{RUN_ID}/Jellyfin")
 FILM_FOLDER = os.path.join(JELLYFIN_PATH, "Films")
 TV_SHOW_FOLDER = os.path.join(JELLYFIN_PATH, "TV Shows")
+YOUTUBE_FOLDER = os.path.join(JELLYFIN_PATH, "YouTube")
 
 
 @pytest.fixture
 def setup_folder_structure():
     os.makedirs(TORRENTS_PATH, exist_ok=True)
+    os.makedirs(YOUTUBE_PATH, exist_ok=True)
     os.makedirs(JELLYFIN_PATH, exist_ok=True)
-    os.makedirs(
-        os.path.join(JELLYFIN_PATH, "Films"), exist_ok=True
-    )
-    os.makedirs(
-        os.path.join(JELLYFIN_PATH, "TV Shows"), exist_ok=True
-    )
+    os.makedirs(os.path.join(JELLYFIN_PATH, "Films"), exist_ok=True)
+    os.makedirs(os.path.join(JELLYFIN_PATH, "TV Shows"), exist_ok=True)
+    os.makedirs(os.path.join(JELLYFIN_PATH, "YouTube"), exist_ok=True)
     yield
 
 
@@ -58,7 +59,13 @@ def setup_tv_show_season_data():
     return season_folder
 
 
-def test_transfer_film_folder():
+def setup_youtube_video_data():
+    video_path = os.path.join(YOUTUBE_PATH, "Best Memes 2024.mp4")
+    open(video_path, "w").close()
+    return video_path
+
+
+def test_transfer_film_folder(setup_folder_structure):
     film_folder = setup_film_data()
     
     transfer_film_to_jellyfin(
@@ -79,7 +86,7 @@ def test_transfer_film_folder():
     )
 
 
-def test_transfer_tv_show_season_folder():
+def test_transfer_tv_show_season_folder(setup_folder_structure):
     tv_show_season_folder = setup_tv_show_season_data()
     
     transfer_tv_show_season_to_jellyfin(
@@ -101,6 +108,19 @@ def test_transfer_tv_show_season_folder():
     assert os.path.exists(
         os.path.join(jellyfin_tv_show_folder, f"Modern Family S05E02.srt")
     )
+
+
+def test_transfer_youtube_video(setup_folder_structure):
+    video_file = setup_youtube_video_data()
+    
+    transfer_video_to_jellyfin(
+        video_path=video_file,
+        jellyfin_video_path=YOUTUBE_FOLDER,
+        video_name="Best Memes"
+    )
+    
+    assert not os.path.exists(video_file)
+    assert os.path.exists(os.path.join(YOUTUBE_FOLDER, "Best Memes.mp4"))
 
 
 if __name__ == '__main__':

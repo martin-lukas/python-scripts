@@ -8,7 +8,10 @@ from utils.console_utils import *
 from utils.file_utils import rename_file
 from utils.regex_utils import get_regex_match
 
-TORRENTS_PATH = os.path.expanduser("~/Downloads/Torrents")
+TORRENT_SOURCE = "Torrents"
+YOUTUBE_SOURCE = "YouTube"
+TORRENTS_PATH = os.path.expanduser(f"~/Downloads/{TORRENT_SOURCE}")
+YOUTUBE_PATH = os.path.expanduser(f"~/Downloads/{YOUTUBE_SOURCE}")
 JELLYFIN_PATH = os.path.expanduser("~/Movies")
 FILM = {
     "name": "Film", "folder": os.path.join(JELLYFIN_PATH, "Films")
@@ -16,6 +19,10 @@ FILM = {
 TV_SHOW = {
     "name": "TV show", "folder": os.path.join(JELLYFIN_PATH, "TV Shows")
 }
+YOUTUBE = {
+    "name": "YouTube", "folder": os.path.join(JELLYFIN_PATH, "YouTube")
+}
+SOURCE_TYPES = [TORRENT_SOURCE, YOUTUBE_SOURCE]
 MEDIA_TYPES = [FILM, TV_SHOW]
 SEASON_EPISODE_PATTERN = re.compile(r"(S\d{2}E\d{2})")
 PREVIOUS_DIR = ".."
@@ -27,6 +34,17 @@ class MediaAlreadyExists(Exception):
 
 
 # --- Console input functions ---
+def read_source():
+    print("Where was it downloaded from?")
+    print_choices(SOURCE_TYPES)
+    choice = read(
+        prompt="> ",
+        matches=lambda x: x.isdigit() and 1 <= int(x) <= len(SOURCE_TYPES),
+        error_message="Invalid choice. Try again."
+    )
+    return SOURCE_TYPES[int(choice) - 1]
+
+
 def read_media_type():
     print("Which media type is it?")
     print_choices([media["name"] for media in MEDIA_TYPES])
@@ -80,6 +98,26 @@ def find_folder(history, cur_path):
                 print_error("Choose a folder.")
                 # Retry
                 return find_folder(history, cur_path)
+
+
+def find_file(cur_path):
+    files = [f for f in os.listdir(cur_path) if not f.startswith(".")]
+    print_choices(files)
+    choice = read(
+        prompt="> ",
+        matches=lambda x: x.isdigit() and 1 <= int(x) <= len(files),
+        error_message="Invalid choice. Try again."
+    )
+    if choice.isdigit():
+        chosen_file = files[int(choice) - 1]
+        chosen_path = os.path.join(cur_path, chosen_file)
+        if os.path.isfile(chosen_path):
+            # Return selected file
+            return chosen_path
+        else:
+            print_error("Choose a folder.")
+            # Retry
+            return find_file(cur_path)
 
 
 def is_film_in_jellyfin(media_name, year):
@@ -140,39 +178,66 @@ def transfer_tv_show_season_to_jellyfin(
     shutil.rmtree(torrent_season_path)
 
 
+def transfer_video_to_jellyfin(video_path, jellyfin_video_path, video_name):
+    _, file_extension = os.path.splitext(video_path)
+    new_file_name = f"{video_name}{file_extension}"
+    destination_path = os.path.join(jellyfin_video_path, new_file_name)
+    try:
+        shutil.move(video_path, destination_path)
+    except FileExistsError:
+        raise MediaAlreadyExists(new_file_name)
+
+
 def main():
     print("Which media do you want to move to Jellyfin?")
     try:
-        torrent_path = find_folder(history=[], cur_path=TORRENTS_PATH)
-        chosen_media_type = read_media_type()
-        media_name = read("Name: ")
-        year = read_year()
-        if chosen_media_type == FILM:
-            if is_film_in_jellyfin(media_name, year):
-                raise MediaAlreadyExists(f"{media_name} ({year})")
+        chosen_source = read_source()
+        if chosen_source == "Torrents":
+            source_path = TORRENTS_PATH
+            torrent_path = find_folder(history=[], cur_path=source_path)
+            chosen_media_type = read_media_type()
+            media_name = read("Name: ")
+            year = read_year()
+            if chosen_media_type == FILM:
+                if is_film_in_jellyfin(media_name, year):
+                    raise MediaAlreadyExists(f"{media_name} ({year})")
+                else:
+                    transfer_film_to_jellyfin(
+                        torrent_path=torrent_path,
+                        jellyfin_film_path=FILM["folder"],
+                        film_name=media_name,
+                        year=year
+                    )
+            elif chosen_media_type == TV_SHOW:
+                season = read_tv_show_season()
+                if is_tv_show_season_in_jellyfin(media_name, year, season):
+                    raise MediaAlreadyExists(
+                        f"{media_name} ({year})/Season {str(season).zfill(2)}"
+                    )
+                else:
+                    transfer_tv_show_season_to_jellyfin(
+                        torrent_season_path=torrent_path,
+                        jellyfin_tv_show_path=chosen_media_type["folder"],
+                        tv_show=media_name,
+                        year=year,
+                        season=season
+                    )
             else:
-                transfer_film_to_jellyfin(
-                    torrent_path=torrent_path,
-                    jellyfin_film_path=FILM["folder"],
-                    film_name=media_name,
-                    year=year
-                )
-        elif chosen_media_type == TV_SHOW:
-            season = read_tv_show_season()
-            if is_tv_show_season_in_jellyfin(media_name, year, season):
-                raise MediaAlreadyExists(
-                    f"{media_name} ({year})/Season {str(season).zfill(2)}"
-                )
-            else:
-                transfer_tv_show_season_to_jellyfin(
-                    torrent_season_path=torrent_path,
-                    jellyfin_tv_show_path=chosen_media_type["folder"],
-                    tv_show=media_name,
-                    year=year,
-                    season=season
-                )
+                raise AssertionError("Invalid media type.")
+        elif chosen_source == "YouTube":
+            source_path = YOUTUBE_PATH
+            video_path = find_file(cur_path=source_path)
+            video_name = read(
+                "Name: ",
+                default=os.path.splitext(os.path.basename(video_path))[0]
+            )
+            transfer_video_to_jellyfin(
+                video_path=video_path,
+                jellyfin_video_path=YOUTUBE["folder"],
+                video_name=video_name
+            )
         else:
-            raise AssertionError("Invalid media type.")
+            raise AssertionError("Invalid source.")
         print_success("Media moved successfully.")
     except MediaAlreadyExists as e:
         print_error(f"Media '{e}' already exists.")

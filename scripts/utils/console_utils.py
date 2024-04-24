@@ -25,11 +25,16 @@ def read_number(
 
 
 def read(
-    prompt, matches=lambda x: True, error_message="Invalid input. Try again."
+    prompt,
+    matches=lambda x: True,
+    error_message="Invalid input. Try again.",
+    default=None
 ):
     while True:
         value = input(Style.RESET_ALL + prompt)
-        if matches(value):
+        if value == "" and default is not None:
+            return default
+        elif matches(value):
             return value
         else:
             print_error(error_message)
